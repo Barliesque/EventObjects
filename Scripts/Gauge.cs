@@ -11,7 +11,6 @@ using UnityEngine;
 
 namespace Barliesque.EventObjects
 {
-
 	/// <summary>
 	/// A Gauge provides a home for a value that needs to be broadly accessible.  Similarly to PartyLine,
 	/// multiple keys may be created by entities that need to change the value of the Gauge; whenever the
@@ -94,31 +93,31 @@ namespace Barliesque.EventObjects
 	/// <typeparam name="T">Type of value to be stored by this Gauge</typeparam>
 	abstract public class Gauge<T> : Gauge
 	{
+		[NonSerialized] private Gauge<T> _inst;
 
-		[NonSerialized] Gauge<T> _inst;
 		protected Gauge<T> Instance
 		{
-			get {
-				if (_inst == null)
+			get
+			{
+				if (_inst) return _inst;
+				
+				_instances ??= new Dictionary<string, Gauge>();
+
+				if (_instances.ContainsKey(this.name))
 				{
-					if (_instances == null)
+					_inst = _instances[this.name] as Gauge<T>;
+					if (!_inst)
 					{
-						_instances = new Dictionary<string, Gauge>();
-					}
-					if (_instances.ContainsKey(this.name))
-					{
-						_inst = _instances[this.name] as Gauge<T>;
-						if (_inst == null)
-						{
-							throw new Exception($"Cannot resolve Gauge[{this.name}]  Are there multiple Gauges with the same name, but different types?  All Gauge names must be unique!");
-						}
-					}
-					else
-					{
-						_instances.Add(this.name, this);
-						_inst = this;
+						throw new Exception(
+							$"Cannot resolve Gauge[{this.name}]  Are there multiple Gauges with the same name, but different types?  All Gauge names must be unique!  {_instances[this.name]} == this... {_instances[this.name] == this}");
 					}
 				}
+				else
+				{
+					_instances.Add(this.name, this);
+					_inst = this;
+				}
+
 				return _inst;
 			}
 		}
@@ -133,10 +132,12 @@ namespace Barliesque.EventObjects
 			T Deserialize(string serial);
 		}
 
-		[SerializeField, Tooltip("If selected, the current value of the Gauge is maintained when the app is restarted.  Useful for things like player settings.")]
+		[SerializeField,
+		 Tooltip("If selected, the current value of the Gauge is maintained when the app is restarted.  Useful for things like player settings.")]
 		protected bool _persistent;
+
 		override public bool IsPersistent => (Instance._persistent && this is ISerializable);
-		public override bool IsSerializable => (Instance is ISerializable);
+		override public bool IsSerializable => (Instance is ISerializable);
 
 		override public string PrefsPath => $"{typeof(T).Name}/{name}";
 
@@ -145,32 +146,40 @@ namespace Barliesque.EventObjects
 
 		[SerializeField]
 		private bool _logChanges = false;
-		bool LogChanges { get { return Instance._logChanges && (Application.isEditor || Debug.isDebugBuild); } }
+
+		private bool LogChanges => Instance._logChanges && (Application.isEditor || Debug.isDebugBuild);
 
 		public delegate void ChangeHandler(T value);
 
 		private List<Key> _keys;
-		override public int KeyCount { get { return (Instance._keys == null) ? 0 : Instance._keys.Count; } }
 
-		List<WeakDelegate<ChangeHandler>> _watchers;
-		override public int WatcherCount { get { return (Instance._watchers == null) ? 0 : Instance._watchers.Count; } }
+		override public int KeyCount => Instance._keys?.Count ?? 0;
 
-		[SerializeField] T _default;
+		private List<WeakDelegate<ChangeHandler>> _watchers;
+
+		override public int WatcherCount => Instance._watchers?.Count ?? 0;
+
+		[SerializeField] private T _default;
+
 		/// <summary>
 		/// The initial value of this Gauge.
 		/// </summary>
-		public T Default { get { return Instance._default; } }
+		public T Default => Instance._default;
 
 		/// <summary>
 		/// The current value of this Gauge.
 		/// </summary>
-		[SerializeField] T _current;
-		public T Value {
-			get {
+		[SerializeField] private T _current;
+
+		public T Value
+		{
+			get
+			{
 				if (Instance != this)
 				{
 					return Instance.Value;
 				}
+
 				if (!IsInitialized) Initialize();
 				return _current;
 			}
@@ -178,8 +187,9 @@ namespace Barliesque.EventObjects
 
 
 		//===
+
 		#region INITIALIZATION
-		
+
 		private void Awake()
 		{
 			if (!IsInitialized) Initialize();
@@ -195,16 +205,20 @@ namespace Barliesque.EventObjects
 		/// </summary>
 		/// <param name="value">The value about to be assigned to this Gauge</param>
 		/// <returns>The value returned will be assigned to this Gauge's current value field.</returns>
-		virtual protected T OnInitialize(T value) {
+		virtual protected T OnInitialize(T value)
+		{
 			return value;
 		}
 
-		bool IsInitialized {
-			get {
+		private bool IsInitialized
+		{
+			get
+			{
 				if (Instance != this)
 				{
 					return Instance.IsInitialized;
 				}
+
 				if (_watchers == null) return false;
 				if (_keys == null) return false;
 				return true;
@@ -218,26 +232,38 @@ namespace Barliesque.EventObjects
 				Instance.Initialize();
 				return;
 			}
-			if (IsPersistent) {
+
+			if (IsPersistent)
+			{
 				InitFromSaved();
-			} else {
+			}
+			else
+			{
 				_current = OnInitialize(_default);
-				
+
 #if LOGGING
-				if (LogChanges) {
+				if (LogChanges)
+				{
 					Debug.Log($"Gauge<{typeof(T)}> [{name}] initialized with default value: {_current?.ToString() ?? "null"}");
 				}
 #endif
 			}
 
-			if (_watchers == null) {
+			if (_watchers == null)
+			{
 				_watchers = new List<WeakDelegate<ChangeHandler>>();
-			} else {
+			}
+			else
+			{
 				_watchers.Clear();
 			}
-			if (_keys != null) {
+
+			if (_keys != null)
+			{
 				_keys.Clear();
-			} else {
+			}
+			else
+			{
 				_keys = new List<Key>();
 			}
 
@@ -248,7 +274,7 @@ namespace Barliesque.EventObjects
 		}
 
 
-		void InitFromSaved()
+		private void InitFromSaved()
 		{
 			var gauge = (ISerializable)this;
 #if LOGGING
@@ -256,16 +282,20 @@ namespace Barliesque.EventObjects
 			var saved = PlayerPrefs.HasKey(PrefsPath);
 #endif
 			var serial = PlayerPrefs.GetString(PrefsPath, gauge.Serialize(_default));
-			try {
+			try
+			{
 				_current = OnInitialize(gauge.Deserialize(serial));
 			}
-			catch (Exception e) {
-				Debug.LogError($"<color=red>Serialization Error in {this.GetType().Name}[{name}] attempting to deserialize: \"{serial}\" to {typeof(T).Name}</color>");
-				throw e;
+			catch (Exception)
+			{
+				Debug.LogError(
+					$"<color=red>Serialization Error in {this.GetType().Name}[{name}] attempting to deserialize: \"{serial}\" to {typeof(T).Name}</color>");
+				throw;
 			}
 #if LOGGING
-			if (LogChanges) {
-                Debug.Log($"Gauge<{typeof(T)}> [{name}] initialized with {(saved ? "saved" : "default")} value: {_current?.ToString() ?? "null"}");
+			if (LogChanges)
+			{
+				Debug.Log($"Gauge<{typeof(T)}> [{name}] initialized with {(saved ? "saved" : "default")} value: {_current?.ToString() ?? "null"}");
 			}
 #endif
 		}
@@ -280,7 +310,7 @@ namespace Barliesque.EventObjects
 		}
 
 
-		bool OnApplicationQuit()
+		private bool OnApplicationQuit()
 		{
 			// ScriptableObject fields remain populated even outside of runtime in the Editor.
 			// So, all fields should be returned to initial value.
@@ -293,11 +323,11 @@ namespace Barliesque.EventObjects
 		}
 #endif
 
-
 		#endregion
-		//===
-		#region WATCHERS
 
+		//===
+
+		#region WATCHERS
 
 		/// <summary>
 		/// Watch for changes to the current value of this Gauge.
@@ -311,21 +341,25 @@ namespace Barliesque.EventObjects
 				Instance.AddWatcher(watcher, handler);
 				return;
 			}
+
 			if (handler == null) return;
 			if (!IsInitialized) Initialize();
 
 			// Check for duplication
-			for (int i = _watchers.Count - 1; i >= 0; i--) {
-				MonoBehaviour watching = null;
-				if (_watchers[i].GetOwner(out watching)) {
+			for (int i = _watchers.Count - 1; i >= 0; i--)
+			{
+				if (_watchers[i].GetOwner(out var watching))
+				{
 					if (watching != watcher) continue;
 					// Found the watcher...
-					ChangeHandler found;
-					if (_watchers[i].GetCallback(out found)) {
+					if (_watchers[i].GetCallback(out var found))
+					{
 						// Handler already added?
 						if (found == handler) return;
 					}
-				} else {
+				}
+				else
+				{
 					// Watcher was Garbage Collected - Remove handler
 					Debug.Log($"<color=yellow>Gauge [{name}]:  Watcher was garbage collected.  Handler removed.</color>");
 					_watchers.RemoveAt(i);
@@ -347,23 +381,26 @@ namespace Barliesque.EventObjects
 				Instance.RemoveWatcher(watcher, handler);
 				return;
 			}
+
 			if (handler == null) return;
 			if (!IsInitialized) Initialize();
 
-			for (int i = _watchers.Count - 1; i >= 0; i--) {
-				MonoBehaviour watching = null;
-				if (_watchers[i].GetOwner(out watching)) {
+			for (int i = _watchers.Count - 1; i >= 0; i--)
+			{
+				if (_watchers[i].GetOwner(out var watching))
+				{
 					if (watching != watcher) continue;
 					// Found the watcher...
-					ChangeHandler found;
-					if (_watchers[i].GetCallback(out found)) {
-						if (found == handler) {
-							// ...and the handler.  Remove!
-							_watchers.RemoveAt(i);
-							return;
-						}
+					if (_watchers[i].GetCallback(out var found))
+					{
+						if (found != handler) continue;
+						// ...and the handler.  Remove!
+						_watchers.RemoveAt(i);
+						return;
 					}
-				} else {
+				}
+				else
+				{
 					// Owner was Garbage Collected - Remove handler
 					Debug.Log($"<color=yellow>Gauge [{name}]:  Watcher was garbage collected.  Handler removed.</color>");
 					_watchers.RemoveAt(i);
@@ -374,28 +411,29 @@ namespace Barliesque.EventObjects
 
 #if UNITY_EDITOR
 		[Obsolete]
-		public override void __getWatchers(List<MonoBehaviour> watchers)
+		override public void __getWatchers(List<MonoBehaviour> watchers)
 		{
 			if (Instance != this)
 			{
 				Instance.__getWatchers(watchers);
 				return;
 			}
+
 			watchers.Clear();
-			if (_watchers != null) {
-				for (int i = _watchers.Count - 1; i >= 0; i--) {
-					MonoBehaviour watcher;
-					var success = _watchers[i].GetOwner(out watcher);
-					watchers.Insert(0, success ? watcher : null);
-				}
+			if (_watchers == null) return;
+			for (int i = _watchers.Count - 1; i >= 0; i--)
+			{
+				var success = _watchers[i].GetOwner(out var watcher);
+				watchers.Insert(0, success ? watcher : null);
 			}
 		}
 #endif
 
 		#endregion
-		//===
-		#region KEYS
 
+		//===
+
+		#region KEYS
 
 		/// <summary>
 		/// To be able to modify the Gauge value, you must have a Key.
@@ -439,8 +477,8 @@ namespace Barliesque.EventObjects
 		/// </summary>
 		private class Key : IKey
 		{
-			Gauge<T> _gauge;
-			WeakDelegate<ChangeHandler> Handler;
+			private Gauge<T> _gauge;
+			private WeakDelegate<ChangeHandler> Handler;
 			internal bool Sending;
 
 			public event Action OnDispose;
@@ -451,21 +489,14 @@ namespace Barliesque.EventObjects
 				Handler = new WeakDelegate<ChangeHandler>(owner, handler);
 			}
 
-			public T Value {
-				get {
-					return _gauge._current;
-				}
+			public T Value
+			{
+				get => _gauge._current;
 
-				set {
-					_gauge.SetValue(this, value);
-				}
+				set => _gauge.SetValue(this, value);
 			}
 
-			public T Default {
-				get {
-					return _gauge._default;
-				}
-			}
+			public T Default => _gauge._default;
 
 			public void Reset()
 			{
@@ -487,7 +518,8 @@ namespace Barliesque.EventObjects
 
 			public void MissingDispose()
 			{
-				Debug.LogException(new Exception($"Gauge [{_gauge.name}] Key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"));
+				Debug.LogException(new Exception(
+					$"Gauge [{_gauge.name}] Key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"));
 				Dispose();
 			}
 
@@ -498,20 +530,25 @@ namespace Barliesque.EventObjects
 			{
 				// If this Key was in the middle of sending a change,
 				// then it's been overridden by a change by another Key.
-				if (Sending) {
+				if (Sending)
+				{
 					Debug.Log($"<color=yellow>Gauge [{_gauge.name}] send cancelled because another key is changing the Gauge value.</color>");
 					Sending = false;
 				}
 
-				try {
-					ChangeHandler callback;
-					if (Handler.GetCallback(out callback)) {
+				try
+				{
+					if (Handler.GetCallback(out var callback))
+					{
 						callback?.Invoke(_gauge._current);
-					} else {
+					}
+					else
+					{
 						MissingDispose();
 					}
 				}
-				catch (Exception e) {
+				catch (Exception e)
+				{
 					Debug.LogException(e);
 				}
 			}
@@ -519,9 +556,11 @@ namespace Barliesque.EventObjects
 			public bool GetOwner(out MonoBehaviour owner)
 			{
 				bool success = Handler.GetOwner(out owner);
-				if (!success && _gauge != null) {
+				if (!success && _gauge != null)
+				{
 					MissingDispose();
 				}
+
 				return success;
 			}
 		}
@@ -539,6 +578,7 @@ namespace Barliesque.EventObjects
 			{
 				return Instance.CreateKey(owner, handler);
 			}
+
 			if (!IsInitialized) Initialize();
 			var key = new Key(owner, this, handler);
 			_keys.Add(key);
@@ -558,30 +598,29 @@ namespace Barliesque.EventObjects
 
 #if UNITY_EDITOR
 		[Obsolete("*** FOR INTERNAL USE ONLY ***")]
-		public override void __getOwners(List<MonoBehaviour> owners)
+		override public void __getOwners(List<MonoBehaviour> owners)
 		{
 			if (Instance != this)
 			{
 				Instance.__getOwners(owners);
 				return;
 			}
+
 			owners.Clear();
-			if (_keys != null) {
-				for (int i = _keys.Count - 1; i >= 0; i--) {
-					MonoBehaviour owner;
-					var success = _keys[i].GetOwner(out owner);
-					owners.Insert(0, success ? owner : null);
-				}
+			if (_keys == null) return;
+			for (int i = _keys.Count - 1; i >= 0; i--)
+			{
+				var success = _keys[i].GetOwner(out var owner);
+				owners.Insert(0, success ? owner : null);
 			}
 		}
 #endif
 
-
 		#endregion
+
 		//===
+
 		#region CHANGE VALUE
-
-
 
 		/// <summary>
 		/// Override this method to add custom handling when the Gauge value is changed.
@@ -597,29 +636,35 @@ namespace Barliesque.EventObjects
 		/// <summary>
 		/// Strictly called via the Key -- or by the Inspector via __changed()
 		/// </summary>
-		void SetValue(Key key, T value)
+		private void SetValue(Key key, T value)
 		{
-			if (!EqualityComparer<T>.Default.Equals(_current, value)) {
-				_current = OnChange(value);
-				SendChangedValue(key);
-			}
+			if (EqualityComparer<T>.Default.Equals(_current, value)) return;
+			_current = OnChange(value);
+			SendChangedValue(key);
 		}
 
 
-		void SendChangedValue(Key sender)
+		private void SendChangedValue(Key sender)
 		{
-			if (Application.isPlaying && IsInitialized) {
+			if (Application.isPlaying && IsInitialized)
+			{
 #if LOGGING
-				if (LogChanges) {
-					MonoBehaviour owner;
-					if (sender != null) {
-						if (sender.GetOwner(out owner)) {
+				if (LogChanges)
+				{
+					if (sender != null)
+					{
+						if (sender.GetOwner(out var owner))
+						{
 							Debug.Log($"[{owner.GetType().Name}] on [{owner.name}] changed Gauge [{name}] value to: {_current}");
-						} else {
+						}
+						else
+						{
 							sender.MissingDispose();
 							return;
 						}
-					} else {
+					}
+					else
+					{
 						Debug.Log($"Gauge [{name}] value changed in editor to: {_current}");
 					}
 				}
@@ -627,38 +672,47 @@ namespace Barliesque.EventObjects
 				// Invoke members
 				if (sender != null) sender.Sending = true;
 
-				for (int i = 0, len = _keys.Count; i < len; i++) {
+				for (int i = 0, len = _keys.Count; i < len; i++)
+				{
 					var receiver = _keys[i];
 					// Don't send to sender
 					if (receiver == sender) continue;
 					receiver.InvokeHandler();
 					// Check that sending hasn't been cancelled
-					if (sender != null && !sender.Sending) return;
+					if (!(sender == null || sender.Sending)) return;
 				}
 
 				// Invoke watchers
-				for (int i = _watchers.Count - 1; i >= 0; i--) {
-					ChangeHandler handler;
-					if (_watchers[i].GetCallback(out handler) && handler != null) {
-						try {
+				for (int i = _watchers.Count - 1; i >= 0; i--)
+				{
+					if (_watchers[i].GetCallback(out var handler) && handler != null)
+					{
+						try
+						{
 							handler.Invoke(_current);
 						}
-						catch (Exception e) {
+						catch (Exception e)
+						{
 							Debug.LogException(e);
 						}
-					} else {
+					}
+					else
+					{
 						// Handler was Garbage Collected - Remove
 						Debug.Log($"<color=yellow>Gauge [{name}]:  Watcher was garbage collected.  Handler removed.</color>");
 						_watchers.RemoveAt(i);
 					}
+
 					// Check that sending hasn't been cancelled
-					if (sender != null && !sender.Sending) return;
+					if (!(sender == null || sender.Sending)) return;
 				}
+
 				if (sender != null) sender.Sending = false;
 			}
 
 			// Store new value in PlayerPrefs
-			if (IsPersistent) {
+			if (IsPersistent)
+			{
 				var gauge = (ISerializable)this;
 				PlayerPrefs.SetString(PrefsPath, gauge.Serialize(_current));
 				PlayerPrefs.Save();
@@ -676,33 +730,35 @@ namespace Barliesque.EventObjects
 				Instance.__changed();
 				return;
 			}
+
 			_current = OnChange(_current);
 			SendChangedValue(null);
 		}
 
 		[Obsolete("*** RESTRICTED ACCESS ***")]
-		public override void __reset()
+		override public void __reset()
 		{
 			if (Instance != this)
 			{
 				Instance.__reset();
 				return;
 			}
+
 			SetValue(null, _default);
 		}
 #endif
 
-
 		#endregion
+
 		//===
-		public override string ToString()
+		override public string ToString()
 		{
 			if (Instance != this)
 			{
 				return $"Gauge<{typeof(T).Name}> [{name}](clone) = [{Instance._current}]";
 			}
+
 			return $"Gauge<{typeof(T).Name}> [{name}] = [{_current}]";
 		}
-
 	}
 }

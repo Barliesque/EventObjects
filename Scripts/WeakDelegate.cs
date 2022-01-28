@@ -19,8 +19,8 @@ namespace Barliesque.EventObjects
 	/// <see>http://www.codewrecks.com/blog/index.php/2011/06/30/weak-reference-to-delegate-never-do-it/</see>
 	public struct WeakDelegate<T> : IWeakDelegate
 	{
-		WeakReference<MonoBehaviour> Owner;  //TODO  Use Unity.Object for the Owner type
-		T Callback;
+		private WeakReference<MonoBehaviour> Owner;  //TODO  Use Unity.Object for the Owner type
+		private T Callback;
 
 		public WeakDelegate(MonoBehaviour owner, T callback)  //TODO  Make two versions:  Component & MonoBehaviour
 		{

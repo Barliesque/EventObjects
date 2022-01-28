@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Barliesque.EventObjects
 {
@@ -82,7 +83,7 @@ namespace Barliesque.EventObjects
 			Application.wantsToQuit += OnApplicationQuit;
 		}
 
-		bool OnApplicationQuit()
+		private bool OnApplicationQuit()
 		{
 			// ScriptableObject fields remain populated even outside of runtime in the Editor.
 			// So, all fields should be returned to initial value.
@@ -102,7 +103,7 @@ namespace Barliesque.EventObjects
 		/// <param name="responseType">Type of the data to be received from subscribers.</param>
 		/// <param name="newKey">Should be true if initialization is being called because a new key is being created.</param>
 		/// <param name="initializer">The entity responsible for initialization (if not already initialized)</param>
-		private void CheckInitialization(Type messageType, Type responseType, bool newKey, MonoBehaviour initializer)
+		private void CheckInitialization(Type messageType, Type responseType, bool newKey, Object initializer)
 		{
 			if (Instance != this)
 			{

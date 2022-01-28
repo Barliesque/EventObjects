@@ -6,12 +6,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using Object = UnityEngine.Object;
 
 
 namespace Barliesque.EventObjects
 {
-
 	/// <summary>
 	/// PartyLine is a specialized Observer implementation for a group of objects
 	/// that need to talk to each other.  When a member of the group sends a
@@ -26,71 +25,62 @@ namespace Barliesque.EventObjects
 	[CreateAssetMenu(fileName = "New Party Line", menuName = "Barliesque/Event Objects/Party Line", order = 2)]
 	public class PartyLine : ScriptableObject
 	{
-		static Dictionary<string, PartyLine> _instances;
-		[NonSerialized] PartyLine _inst;
-		PartyLine Instance
+		static private Dictionary<string, PartyLine> _instances;
+		[NonSerialized] private PartyLine _inst;
+
+		private PartyLine Instance
 		{
-			get {
-				if (_inst == null)
+			get
+			{
+				if (_inst) return _inst;
+				
+				_instances ??= new Dictionary<string, PartyLine>();
+
+				if (_instances.ContainsKey(this.name))
 				{
-					if (_instances == null)
-					{
-						_instances = new Dictionary<string, PartyLine>();
-					}
-					if (_instances.ContainsKey(this.name))
-					{
-						_inst = _instances[this.name];
-					}
-					else
-					{
-						_instances.Add(this.name, this);
-						_inst = this;
-					}
+					_inst = _instances[this.name];
 				}
+				else
+				{
+					_instances.Add(this.name, this);
+					_inst = this;
+				}
+
 				return _inst;
 			}
 		}
 
 
-
 		[SerializeField, TextArea]
 		private string Comments;
 
-		List<KeyBase> _keys;  // List<Key<T>> or List<Key>
-		List<IWeakDelegate> _listeners;  // List<WeakDelegate<MessageHandler<T>>> or List<WeakDelegate<MessageHandler>>
+		private List<KeyBase> _keys;
+		private List<IWeakDelegate> _listeners;
 
 		public delegate void MessageHandler();
-		public delegate void MessageHandler<T>(T message);
+
+		public delegate void MessageHandler<in T>(T message);
 
 		/// <summary>
-		/// Count of the number of undisposed Keys that currently communicate through this PartyLine
+		/// Count of the number of Keys that currently communicate through this PartyLine
 		/// </summary>
-		public int KeyCount {
-			get {
-				if (_keys == null) return 0;
-				return ((ICollection)_keys).Count;
-			}
-		}
+		public int KeyCount => ((ICollection)_keys)?.Count ?? 0;
 
 		/// <summary>
 		/// Count of the number of listeners receiving messages from this PartyLine
 		/// </summary>
-		public int ListenerCount {
-			get {
-				if (_listeners == null) return 0;
-				return ((ICollection)_listeners).Count;
-			}
-		}
+		public int ListenerCount => ((ICollection)_listeners)?.Count ?? 0;
 
 		/// <summary>
 		/// The type of value or object to be sent across this PartyLine
 		/// </summary>
-		public Type MessageType { get { return _messageType; } }
-		Type _messageType;
+		public Type MessageType => _messageType;
+		private Type _messageType;
 
 		[SerializeField]
 		private bool _logMessages;
-		bool LogMessages { get { return _logMessages && (Application.isEditor || Debug.isDebugBuild); } }
+
+		private bool LogMessages => _logMessages && (Application.isEditor || Debug.isDebugBuild);
 
 
 #if UNITY_EDITOR
@@ -100,19 +90,19 @@ namespace Barliesque.EventObjects
 		public void __getOwners(List<MonoBehaviour> owners)
 		{
 			owners.Clear();
-			if (_keys != null) {
-				for (int i = _keys.Count - 1; i >= 0; i--) {
-					MonoBehaviour owner;
-					var success = _keys[i].GetOwner(out owner);
-					owners.Insert(0, success ? owner : null);
-				}
+			if (_keys == null) return;
+			
+			for (int i = _keys.Count - 1; i >= 0; i--)
+			{
+				var success = _keys[i].GetOwner(out var owner);
+				owners.Insert(0, success ? owner : null);
 			}
 		}
 #endif
 
 		//===
-		#region INITIALIZATION
 
+		#region INITIALIZATION
 
 #if UNITY_EDITOR
 
@@ -122,7 +112,7 @@ namespace Barliesque.EventObjects
 			Application.wantsToQuit += OnApplicationQuit;
 		}
 
-		bool OnApplicationQuit()
+		private bool OnApplicationQuit()
 		{
 			// ScriptableObject fields remain populated even outside of runtime in the Editor.
 			// So, all fields should be returned to initial value.
@@ -134,23 +124,32 @@ namespace Barliesque.EventObjects
 #endif
 
 
-		void CheckInitialization(Type messageType, bool newKey, MonoBehaviour initializer)
+		private void CheckInitialization(Type messageType, bool newKey, Object initializer)
 		{
-			if (_keys == null) {
+			if (_keys == null)
+			{
 				_keys = new List<KeyBase>();
 				_listeners = new List<IWeakDelegate>();
 				_messageType = messageType;
 #if LOGGING
-				if (LogMessages) {
-					Debug.Log($"PartyLine [{name}] initialized when [{initializer.GetType().Name}] on [{initializer.name}] called {(newKey ? "CreateKey()" : "AddListener()")}");
+				if (LogMessages)
+				{
+					Debug.Log(
+						$"PartyLine [{name}] initialized when [{initializer.GetType().Name}] on [{initializer.name}] called {(newKey ? "CreateKey()" : "AddListener()")}");
 				}
 #endif
-			} else {
+			}
+			else
+			{
 				//  Check for matching type
-				if (_messageType != messageType) {
-					if (_messageType == null) {
+				if (_messageType != messageType)
+				{
+					if (_messageType == null)
+					{
 						throw new Exception($"Type mismatch!  PartyLine [{name}] has been initialized for messages with no parameter.");
-					} else {
+					}
+					else
+					{
 						throw new Exception($"Type mismatch!  PartyLine [{name}] has been initialized for messages of type <{_messageType.Name}>");
 					}
 				}
@@ -158,9 +157,10 @@ namespace Barliesque.EventObjects
 		}
 
 		#endregion
-		//===
-		#region KEYS
 
+		//===
+
+		#region KEYS
 
 		/// <summary>
 		/// Each member of the PartyLine group must have a key, which it will use to send messages.  The first key created determines what message type all keys must handle.
@@ -180,6 +180,7 @@ namespace Barliesque.EventObjects
 		/// <summary>
 		/// Each member of the PartyLine group must have a key, which it will use to send messages.  The first key created determines what message type all keys must handle.
 		/// </summary>
+		/// <param name="owner">A reference to the script that owns the key (typically "this").  If the owner is garbage collected without Key.Dispose() being called, an error is thrown.</param>
 		/// <param name="handler">A method to handle incoming messages from the PartyLine</param>
 		public IKey<T> CreateKey<T>(MonoBehaviour owner, MessageHandler<T> handler)
 		{
@@ -194,16 +195,8 @@ namespace Barliesque.EventObjects
 		private void DisposeKey(KeyBase key)
 		{
 			if (_keys == null) return;
-			if (_keys.Contains(key)) {
-				_keys.Remove(key);
-			}
-		}
-
-
-		private void DisposeKey<T>(Key<T> key)
-		{
-			if (_keys == null) return;
-			if (_keys.Contains(key)) {
+			if (_keys.Contains(key))
+			{
 				_keys.Remove(key);
 			}
 		}
@@ -231,7 +224,7 @@ namespace Barliesque.EventObjects
 		}
 
 
-		public interface IKey<T>
+		public interface IKey<in T>
 		{
 			/// <summary>
 			/// Send a message to all other members of the PartyLine
@@ -253,9 +246,9 @@ namespace Barliesque.EventObjects
 #endif
 		}
 
-		abstract class KeyBase
+		abstract private class KeyBase
 		{
-			public IWeakDelegate Handler;
+			protected IWeakDelegate Handler;
 			protected PartyLine _party;
 			internal bool Sending = false;
 
@@ -269,10 +262,13 @@ namespace Barliesque.EventObjects
 			public bool GetOwner(out MonoBehaviour owner)
 			{
 				bool success = Handler.GetOwner(out owner);
-				if (!success && _party != null) {
-					Debug.LogException(new Exception($"PartyLine [{_party.name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"));
+				if (!success && _party != null)
+				{
+					Debug.LogException(new Exception(
+						$"PartyLine [{_party.name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"));
 					Dispose();
 				}
+
 				return success;
 			}
 
@@ -319,11 +315,11 @@ namespace Barliesque.EventObjects
 			}
 		}
 
-
 		#endregion
-		//===
-		#region LISTENERS
 
+		//===
+
+		#region LISTENERS
 
 		/// <summary>
 		/// Listen for messages being distributed on the PartyLine.
@@ -346,13 +342,14 @@ namespace Barliesque.EventObjects
 		/// Listen for messages being distributed on the PartyLine.
 		/// </summary>
 		/// <typeparam name="T">Type of message distributed by this PartyLine</typeparam>
+		/// <param name="listener">A reference to the script that contains the handler (typically "this").  If the listener is garbage collected, the handler is automatically removed.</param>
 		/// <param name="handler">A listener method to receive messages distributed by this PartyLine</param>
 		public void AddListener<T>(MonoBehaviour listener, MessageHandler<T> handler)
 		{
 			CheckInitialization(typeof(T), false, listener);
 
 			// Check for duplication
-			if (handler == null || FindListener<T>(listener, handler) >= 0) return;
+			if (handler == null || FindListener(listener, handler) >= 0) return;
 
 			// Add new listener
 			_listeners.Add(new WeakDelegate<MessageHandler<T>>(listener, handler));
@@ -368,7 +365,8 @@ namespace Barliesque.EventObjects
 		{
 			if (_listeners == null) return;
 			int i = FindListener(listener, handler);
-			if (i >= 0) {
+			if (i >= 0)
+			{
 				_listeners.RemoveAt(i);
 			}
 		}
@@ -384,55 +382,60 @@ namespace Barliesque.EventObjects
 		{
 			if (_listeners == null) return;
 			int i = FindListener(listener, handler);
-			if (i >= 0) {
+			if (i >= 0)
+			{
 				_listeners.RemoveAt(i);
 			}
 		}
 
 
-		int FindListener(MonoBehaviour listener, MessageHandler handler)
+		private int FindListener(Object listener, MessageHandler handler)
 		{
-			for (int i = _listeners.Count - 1; i >= 0; i--) {
-				MonoBehaviour listening = null;
-				if (_listeners[i].GetOwner(out listening)) {
+			for (int i = _listeners.Count - 1; i >= 0; i--)
+			{
+				if (_listeners[i].GetOwner(out var listening))
+				{
 					if (listening != listener) continue;
 					// Found the listener
-					MessageHandler found;
 					var del = (WeakDelegate<MessageHandler>)_listeners[i];
-					if (del.GetCallback(out found)) {
-						// Handler found?
-						if (found == handler) return i;
-					}
-				} else {
+					// Handler found?
+					if (!del.GetCallback(out var found)) continue;
+					if (found == handler) return i;
+				}
+				else
+				{
 					// Listener was Garbage Collected - Remove handler
 					Debug.Log($"<color=yellow>PartyLine [{name}]:  Listener was garbage collected.  Handler removed.</color>");
 					_listeners.RemoveAt(i);
 				}
 			}
+
 			return -1;
 		}
 
 
-		int FindListener<T>(MonoBehaviour listener, MessageHandler<T> handler)
+		private int FindListener<T>(Object listener, MessageHandler<T> handler)
 		{
 			// Check for duplication
-			for (int i = _listeners.Count - 1; i >= 0; i--) {
-				MonoBehaviour listening;
+			for (int i = _listeners.Count - 1; i >= 0; i--)
+			{
 				var del = (WeakDelegate<MessageHandler<T>>)_listeners[i];
-				if (del.GetOwner(out listening)) {
+				if (del.GetOwner(out var listening))
+				{
 					if (listening != listener) continue;
 					// Found the listener
-					MessageHandler<T> found;
-					if (del.GetCallback(out found)) {
-						// Handler found?
-						if (found == handler) return i;
-					}
-				} else {
+					if (!del.GetCallback(out var found)) continue;
+					// Handler found?
+					if (found == handler) return i;
+				}
+				else
+				{
 					// Listener was Garbage Collected - Remove handler
 					Debug.Log($"<color=yellow>PartyLine [{name}]:  Listener was garbage collected.  Handler removed.</color>");
 					_listeners.RemoveAt(i);
 				}
 			}
+
 			return -1;
 		}
 
@@ -444,70 +447,82 @@ namespace Barliesque.EventObjects
 		public void __getListeners(List<MonoBehaviour> listeners)
 		{
 			listeners.Clear();
-			if (_listeners != null) {
-				for (int i = _listeners.Count - 1; i >= 0; i--) {
-					MonoBehaviour listener;
-					var success = _listeners[i].GetOwner(out listener);
-					listeners.Insert(0, success ? listener : null);
-				}
+			if (_listeners == null) return;
+			for (int i = _listeners.Count - 1; i >= 0; i--)
+			{
+				var success = _listeners[i].GetOwner(out var listener);
+				listeners.Insert(0, success ? listener : null);
 			}
 		}
 #endif
 
-
 		#endregion
-		//===
-		#region MESSAGE SENDING
 
+		//===
+
+		#region MESSAGE SENDING
 
 		private void SendMessage(Key sender)
 		{
-			MonoBehaviour member;
-			if (!sender.GetOwner(out member)) return;
+			if (!sender.GetOwner(out var member)) return;
 
 			//  If sender is already sending, then this is a recursive call
-			if (sender.Sending) {
+			if (sender.Sending)
+			{
 				Debug.LogException(new Exception($"PartyLine [{name}] blocked a recursive attempt by [{member.name}] to send a message!"));
 				return;
 			}
+
 			sender.Sending = true;
 
 #if LOGGING
-			if (LogMessages) {
+			if (LogMessages)
+			{
 				Debug.Log($"[{member.GetType().Name}] on [{member.name}] sent (void) to PartyLine [{name}]");
 			}
 #endif
 
-			for (int i = _keys.Count - 1; i >= 0; i--) {
+			for (int i = _keys.Count - 1; i >= 0; i--)
+			{
 				var receiver = (Key)_keys[i];
 				if (receiver == sender) continue;
 
-				MessageHandler callback = null;
-				if (receiver.GetCallback(out callback)) {
-					try {
+				if (receiver.GetCallback(out var callback))
+				{
+					try
+					{
 						callback?.Invoke();
 					}
-					catch (Exception e) {
+					catch (Exception e)
+					{
 						Debug.LogException(e);
 					}
-				} else {
-					Debug.LogException(new Exception($"PartyLine [{name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"));
-					continue;
+				}
+				else
+				{
+					Debug.LogException(new Exception(
+						$"PartyLine [{name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"));
 				}
 			}
 
-			if (_listeners != null) {
-				for (int i = _listeners.Count - 1; i >= 0; i--) {
-					MessageHandler handler;
+			if (_listeners != null)
+			{
+				for (int i = _listeners.Count - 1; i >= 0; i--)
+				{
 					var del = (WeakDelegate<MessageHandler>)_listeners[i];
-					if (del.GetCallback(out handler) && handler != null) {
-						try {
+					if (del.GetCallback(out var handler) && handler != null)
+					{
+						try
+						{
 							handler.Invoke();
 						}
-						catch (Exception e) {
+						catch (Exception e)
+						{
 							Debug.LogException(e);
 						}
-					} else {
+					}
+					else
+					{
 						// Listener was Garbage Collected - Remove handler
 						Debug.Log($"<color=yellow>PartyLine [{name}]:  Listener was garbage collected.  Handler removed.</color>");
 						_listeners.RemoveAt(i);
@@ -515,60 +530,71 @@ namespace Barliesque.EventObjects
 				}
 			}
 
-			if (sender != null) {
-				sender.Sending = false;
-			}
+			sender.Sending = false;
 		}
 
 
-		private void SendMessage<T>(Key<T> sender, T message)
+		private void SendMessage<T>(KeyBase sender, T message)
 		{
-			MonoBehaviour member;
-			if (!sender.GetOwner(out member)) return;
+			if (!sender.GetOwner(out var member)) return;
 
 			//  If sender is already sending, then this is a recursive call
-			if (sender.Sending) {
+			if (sender.Sending)
+			{
 				Debug.LogException(new Exception($"PartyLine [{name}] blocked a recursive attempt by {member.name} to send a message!"));
 				return;
 			}
+
 			sender.Sending = true;
 
 #if LOGGING
-			if (LogMessages) {
+			if (LogMessages)
+			{
 				Debug.Log($"[{member.GetType().Name}] on [{member.name}] sent [{message?.ToString() ?? "null"}] to PartyLine [{name}]");
 			}
 #endif
 
-			for (int i = _keys.Count - 1; i >= 0; i--) {
+			for (int i = _keys.Count - 1; i >= 0; i--)
+			{
 				var receiver = (Key<T>)_keys[i];
 				if (receiver == sender) continue;
 
-				MessageHandler<T> callback = null;
-				if (receiver.GetCallback(out callback)) {
-					try {
+				if (receiver.GetCallback(out MessageHandler<T> callback))
+				{
+					try
+					{
 						callback?.Invoke(message);
 					}
-					catch (Exception e) {
+					catch (Exception e)
+					{
 						Debug.LogException(e);
 					}
-				} else {
-					Debug.LogException(new Exception($"PartyLine [{name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"));
-					continue;
+				}
+				else
+				{
+					Debug.LogException(new Exception(
+						$"PartyLine [{name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"));
 				}
 			}
 
-			if (_listeners != null) {
-				for (int i = _listeners.Count - 1; i >= 0; i--) {
-					MessageHandler<T> handler;
+			if (_listeners != null)
+			{
+				for (int i = _listeners.Count - 1; i >= 0; i--)
+				{
 					var del = (WeakDelegate<MessageHandler<T>>)_listeners[i];
-					if (del.GetCallback(out handler) && handler != null) {
-						try {
+					if (del.GetCallback(out var handler) && handler != null)
+					{
+						try
+						{
 							handler.Invoke(message);
 						}
-						catch (Exception e) {
+						catch (Exception e)
+						{
 							Debug.LogException(e);
 						}
-					} else {
+					}
+					else
+					{
 						// Listener was Garbage Collected - Remove handler
 						Debug.Log($"<color=yellow>PartyLine [{name}]:  Listener was garbage collected.  Handler removed.</color>");
 						_listeners.RemoveAt(i);
@@ -576,14 +602,11 @@ namespace Barliesque.EventObjects
 				}
 			}
 
-			if (sender != null) {
-				sender.Sending = false;
-			}
+			sender.Sending = false;
 		}
 
-
 		#endregion
-		//===
 
+		//===
 	}
 }

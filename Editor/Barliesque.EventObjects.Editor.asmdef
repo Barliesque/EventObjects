@@ -1,0 +1,19 @@
+{
+    "name": "Barliesque.EventObjects.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:55ec6f2c57c31614381aedb5a717b121",
+        "GUID:dc8e321b99f0ae14aaace83fdea21d01"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

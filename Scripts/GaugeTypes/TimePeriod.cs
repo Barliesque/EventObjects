@@ -5,7 +5,7 @@ using System;
 [Serializable]
 public struct TimePeriod : ISerializationCallbackReceiver
 {
-	[SerializeField] int _days;
+	[SerializeField] private int _days;
 	public int Days {
 		get { return _days; }
 		set {
@@ -14,7 +14,7 @@ public struct TimePeriod : ISerializationCallbackReceiver
 		}
 	}
 
-	[SerializeField] int _hours;
+	[SerializeField] private int _hours;
 	public int Hours {
 		get { return _hours; }
 		set {
@@ -23,7 +23,7 @@ public struct TimePeriod : ISerializationCallbackReceiver
 		}
 	}
 
-	[SerializeField] int _minutes;
+	[SerializeField] private int _minutes;
 	public int Minutes {
 		get { return _minutes; }
 		set {
@@ -32,7 +32,7 @@ public struct TimePeriod : ISerializationCallbackReceiver
 		}
 	}
 
-	[SerializeField] float _seconds;
+	[SerializeField] private float _seconds;
 	public float Seconds {
 		get { return _seconds; }
 		set {
@@ -51,21 +51,21 @@ public struct TimePeriod : ISerializationCallbackReceiver
 		Validate();
 	}
 
-	void Validate()
+	private void Validate()
 	{
 		Overflow(ref _seconds, 60, ref _minutes);
 		Overflow(ref _minutes, 60, ref _hours);
 		Overflow(ref _hours, 24, ref _days);
 	}
 
-	void Overflow(ref int first, int max, ref int second)
+	private void Overflow(ref int first, int max, ref int second)
 	{
 		int over = first / max;
 		first -= over * max;
 		second += over;
 	}
 
-	void Overflow(ref float first, int max, ref int second)
+	private void Overflow(ref float first, int max, ref int second)
 	{
 		int over = (int)first / max;
 		first -= over * max;
