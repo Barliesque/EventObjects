@@ -39,8 +39,7 @@ namespace Barliesque.EventObjects
 		/// </summary>
 		public bool GetCallback(out T callback)
 		{
-			MonoBehaviour owner;
-			bool isAlive = Owner.TryGetTarget(out owner) && (owner != null);
+			bool isAlive = Owner.TryGetTarget(out var owner) && (owner != null);
 			if (isAlive) {
 				callback = Callback;
 				return true;
@@ -64,10 +63,9 @@ namespace Barliesque.EventObjects
 			return false;
 		}
 
-		public override string ToString()
+		override public string ToString()
 		{
-			MonoBehaviour owner;
-			if (GetOwner(out owner)) {
+			if (GetOwner(out var owner)) {
 				return $"[WeakDelegate: {owner.GetType()}.{Callback.ToString()} on {owner.name}]";
 			} else {
 				return "[WeakDelegate: Owner is null]";
