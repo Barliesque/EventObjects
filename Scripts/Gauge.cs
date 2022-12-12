@@ -192,12 +192,12 @@ namespace Barliesque.EventObjects
 
 		private void Awake()
 		{
-			if (!IsInitialized) Initialize();
+			if (!IsInitialized && Application.isPlaying) Initialize();
 		}
 
 		private void OnEnable()
 		{
-			if (!IsInitialized) Initialize();
+			if (!IsInitialized && Application.isPlaying) Initialize();
 		}
 
 		/// <summary>
@@ -672,7 +672,7 @@ namespace Barliesque.EventObjects
 				// Invoke members
 				if (sender != null) sender.Sending = true;
 
-				for (int i = 0, len = _keys.Count; i < len; i++)
+				for (int i = _keys.Count - 1; i >= 0; i--)
 				{
 					var receiver = _keys[i];
 					// Don't send to sender
