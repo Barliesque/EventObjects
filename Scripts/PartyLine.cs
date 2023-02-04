@@ -51,7 +51,7 @@ namespace Barliesque.EventObjects
 		}
 
 
-		[SerializeField, TextArea]
+		[SerializeField, TextArea(4,16)]
 		private string Comments;
 
 		private List<KeyBase> _keys;
@@ -367,6 +367,22 @@ namespace Barliesque.EventObjects
 			int i = FindListener(listener, handler);
 			if (i >= 0)
 			{
+				_listeners.RemoveAt(i);
+			}
+		}
+
+		
+		/// <summary>
+		/// Remove all handlers registered to the given listener.
+		/// </summary>
+		/// <param name="listener"></param>
+		public void RemoveListener(MonoBehaviour listener)
+		{
+			if (_listeners == null) return;
+			for (int i = _listeners.Count - 1; i >= 0; i--)
+			{
+				if (!_listeners[i].GetOwner(out var listening)) continue;
+				if (listening != listener) continue;
 				_listeners.RemoveAt(i);
 			}
 		}
