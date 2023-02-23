@@ -493,7 +493,11 @@ namespace Barliesque.EventObjects
 			{
 				get => _gauge._current;
 
-				set => _gauge.SetValue(this, value);
+				set
+				{
+					_gauge.SetValue(this, value);
+					if (_gauge.IsPersistent) _gauge._default = value;
+				}
 			}
 
 			public T Default => _gauge._default;
