@@ -50,7 +50,7 @@ namespace Barliesque.EventObjects
 		}
 
 
-		[SerializeField, TextArea] private string Comments;
+		[SerializeField, TextArea(4,16)] private string Comments;
 
 		public delegate void MessageHandler();
 		public delegate void MessageHandler<in T>(T data);

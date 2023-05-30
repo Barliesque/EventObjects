@@ -141,7 +141,7 @@ namespace Barliesque.EventObjects
 
 		override public string PrefsPath => $"{typeof(T).Name}/{name}";
 
-		[SerializeField, TextArea]
+		[SerializeField, TextArea(4,16)]
 		private string Comments;
 
 		[SerializeField]
@@ -192,12 +192,12 @@ namespace Barliesque.EventObjects
 
 		private void Awake()
 		{
-			if (!IsInitialized && Application.isPlaying) Initialize();
+			if (Application.isPlaying && !IsInitialized) Initialize();
 		}
 
 		private void OnEnable()
 		{
-			if (!IsInitialized && Application.isPlaying) Initialize();
+			if (Application.isPlaying && !IsInitialized) Initialize();
 		}
 
 		/// <summary>
@@ -493,7 +493,11 @@ namespace Barliesque.EventObjects
 			{
 				get => _gauge._current;
 
-				set => _gauge.SetValue(this, value);
+				set
+				{
+					_gauge.SetValue(this, value);
+					if (_gauge.IsPersistent) _gauge._default = value;
+				}
 			}
 
 			public T Default => _gauge._default;
