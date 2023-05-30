@@ -1,5 +1,5 @@
 {
-	"name": "com.barliesque.EventObjects",
+	"name": "com.barliesque.event-objects",
 	"version": "1.0.0",
 	"displayName": "Event Objects",
 	"description": "Create ScriptableObjects to serve as a conduit for generic, decoupled events.  Four unique types of events are supported:  Messenger (one-to-many), PartyLine (many-to-many), Mailbox (many-to-one), and Guage (persistent global value).  The ability to reference Event Objects by dragging and dropping them into the Inspector makes them very easy to implement.",
