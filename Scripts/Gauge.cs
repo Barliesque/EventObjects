@@ -244,7 +244,7 @@ namespace Barliesque.EventObjects
 #if LOGGING
 				if (LogChanges)
 				{
-					Debug.Log($"Gauge<{typeof(T)}> [{name}] initialized with default value: {_current?.ToString() ?? "null"}");
+					Debug.Log($"Gauge<{typeof(T)}> [{name}] initialized with default value: {_current?.ToString() ?? "null"}", this);
 				}
 #endif
 			}
@@ -289,13 +289,13 @@ namespace Barliesque.EventObjects
 			catch (Exception)
 			{
 				Debug.LogError(
-					$"<color=red>Serialization Error in {this.GetType().Name}[{name}] attempting to deserialize: \"{serial}\" to {typeof(T).Name}</color>");
+					$"<color=red>Serialization Error in {this.GetType().Name}[{name}] attempting to deserialize: \"{serial}\" to {typeof(T).Name}</color>", this);
 				throw;
 			}
 #if LOGGING
 			if (LogChanges)
 			{
-				Debug.Log($"Gauge<{typeof(T)}> [{name}] initialized with {(saved ? "saved" : "default")} value: {_current?.ToString() ?? "null"}");
+				Debug.Log($"Gauge<{typeof(T)}> [{name}] initialized with {(saved ? "saved" : "default")} value: {_current?.ToString() ?? "null"}", this);
 			}
 #endif
 		}
@@ -361,7 +361,7 @@ namespace Barliesque.EventObjects
 				else
 				{
 					// Watcher was Garbage Collected - Remove handler
-					Debug.Log($"<color=yellow>Gauge [{name}]:  Watcher was garbage collected.  Handler removed.</color>");
+					Debug.Log($"<color=yellow>Gauge [{name}]:  Watcher was garbage collected.  Handler removed.</color>", this);
 					_watchers.RemoveAt(i);
 				}
 			}
@@ -402,7 +402,7 @@ namespace Barliesque.EventObjects
 				else
 				{
 					// Owner was Garbage Collected - Remove handler
-					Debug.Log($"<color=yellow>Gauge [{name}]:  Watcher was garbage collected.  Handler removed.</color>");
+					Debug.Log($"<color=yellow>Gauge [{name}]:  Watcher was garbage collected.  Handler removed.</color>", this);
 					_watchers.RemoveAt(i);
 				}
 			}
@@ -523,7 +523,7 @@ namespace Barliesque.EventObjects
 			public void MissingDispose()
 			{
 				Debug.LogException(new Exception(
-					$"Gauge [{_gauge.name}] Key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"));
+					$"Gauge [{_gauge.name}] Key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"), _gauge);
 				Dispose();
 			}
 
@@ -536,7 +536,7 @@ namespace Barliesque.EventObjects
 				// then it's been overridden by a change by another Key.
 				if (Sending)
 				{
-					Debug.Log($"<color=yellow>Gauge [{_gauge.name}] send cancelled because another key is changing the Gauge value.</color>");
+					Debug.Log($"<color=yellow>Gauge [{_gauge.name}] send cancelled because another key is changing the Gauge value.</color>", _gauge);
 					Sending = false;
 				}
 
@@ -553,7 +553,7 @@ namespace Barliesque.EventObjects
 				}
 				catch (Exception e)
 				{
-					Debug.LogException(e);
+					Debug.LogException(e, _gauge);
 				}
 			}
 
@@ -659,7 +659,7 @@ namespace Barliesque.EventObjects
 					{
 						if (sender.GetOwner(out var owner))
 						{
-							Debug.Log($"[{owner.GetType().Name}] on [{owner.name}] changed Gauge [{name}] value to: {_current}");
+							Debug.Log($"[{owner.GetType().Name}] on [{owner.name}] changed Gauge [{name}] value to: {_current}", this);
 						}
 						else
 						{
@@ -669,7 +669,7 @@ namespace Barliesque.EventObjects
 					}
 					else
 					{
-						Debug.Log($"Gauge [{name}] value changed in editor to: {_current}");
+						Debug.Log($"Gauge [{name}] value changed in editor to: {_current}", this);
 					}
 				}
 #endif
@@ -697,13 +697,13 @@ namespace Barliesque.EventObjects
 						}
 						catch (Exception e)
 						{
-							Debug.LogException(e);
+							Debug.LogException(e, this);
 						}
 					}
 					else
 					{
 						// Handler was Garbage Collected - Remove
-						Debug.Log($"<color=yellow>Gauge [{name}]:  Watcher was garbage collected.  Handler removed.</color>");
+						Debug.Log($"<color=yellow>Gauge [{name}]:  Watcher was garbage collected.  Handler removed.</color>", this);
 						_watchers.RemoveAt(i);
 					}
 
