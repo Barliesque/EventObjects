@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Globalization;
+using UnityEngine;
 
 namespace Barliesque.EventObjects
 {
@@ -6,14 +7,14 @@ namespace Barliesque.EventObjects
 	public class GaugeFloatClamped : Gauge<float>, Gauge<float>.ISerializable
 	{
 		[SerializeField] private float _min = 0f;
-		public float Min { get { return _min; } }
+		public float Min => _min;
 
 		[SerializeField] private float _max = 1f;
-		public float Max { get { return _max; } }
+		public float Max => _max;
 
 		public string Serialize(float value)
 		{
-			return value.ToString();
+			return value.ToString(CultureInfo.InvariantCulture);
 		}
 
 		public float Deserialize(string serial)
@@ -21,7 +22,7 @@ namespace Barliesque.EventObjects
 			return float.Parse(serial);
 		}
 
-		protected override float OnChange(float value)
+		override protected float OnChange(float value)
 		{
 			return base.OnChange(Mathf.Clamp(value, _min, _max));
 		}
