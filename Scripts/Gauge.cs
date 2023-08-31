@@ -108,6 +108,7 @@ namespace Barliesque.EventObjects
 					_inst = _instances[this.name] as Gauge<T>;
 					if (!_inst)
 					{
+						if (!Application.isPlaying) return null;
 						throw new Exception(
 							$"Cannot resolve Gauge[{this.name}]  Are there multiple Gauges with the same name, but different types?  All Gauge names must be unique!  {_instances[this.name]} == this... {_instances[this.name] == this}");
 					}
@@ -136,7 +137,7 @@ namespace Barliesque.EventObjects
 		 Tooltip("If selected, the current value of the Gauge is maintained when the app is restarted.  Useful for things like player settings.")]
 		protected bool _persistent;
 
-		override public bool IsPersistent => (Instance._persistent && this is ISerializable);
+		override public bool IsPersistent => (Instance && Instance._persistent && this is ISerializable);
 		override public bool IsSerializable => (Instance is ISerializable);
 
 		override public string PrefsPath => $"{typeof(T).Name}/{name}";
