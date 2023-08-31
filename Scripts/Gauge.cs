@@ -492,12 +492,7 @@ namespace Barliesque.EventObjects
 			public T Value
 			{
 				get => _gauge._current;
-
-				set
-				{
-					_gauge.SetValue(this, value);
-					if (_gauge.IsPersistent) _gauge._default = value;
-				}
+				set => _gauge.SetValue(this, value);
 			}
 
 			public T Default => _gauge._default;
@@ -520,6 +515,7 @@ namespace Barliesque.EventObjects
 				OnDispose?.Invoke();
 			}
 
+			// MissingDispose() must be public--when LOGGING is defined, it will be called from SendChangedValue()
 			public void MissingDispose()
 			{
 				Debug.LogException(new Exception(
