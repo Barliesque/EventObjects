@@ -178,6 +178,7 @@ namespace Barliesque.EventObjects
 			{
 				if (Instance != this)
 				{
+					if (!_inst) _inst = this;
 					return Instance.Value;
 				}
 
