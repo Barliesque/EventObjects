@@ -166,6 +166,11 @@ namespace Barliesque.EventObjects
 		/// The initial value of this Gauge.
 		/// </summary>
 		public T Default => Instance._default;
+		
+		/// <summary>
+		/// The value of the Gauge before the most recent change.
+		/// </summary>
+		public T Previous { get; private set; }
 
 		/// <summary>
 		/// The current value of this Gauge.
@@ -241,6 +246,7 @@ namespace Barliesque.EventObjects
 			}
 			else
 			{
+				Previous = _current;
 				_current = OnInitialize(_default);
 
 #if LOGGING
@@ -286,6 +292,7 @@ namespace Barliesque.EventObjects
 			var serial = PlayerPrefs.GetString(PrefsPath, gauge.Serialize(_default));
 			try
 			{
+				Previous = _current;
 				_current = OnInitialize(gauge.Deserialize(serial));
 			}
 			catch (Exception)
@@ -319,6 +326,7 @@ namespace Barliesque.EventObjects
 			_watchers = null;
 			_keys = null;
 			//if (!IsPersistent) {
+			//  Previous = _current;
 			//	_current = _default;
 			//}
 			return true;
@@ -448,6 +456,13 @@ namespace Barliesque.EventObjects
 			T Value { get; set; }
 
 			/// <summary>
+			/// Set the value of the Gauge.  ChangeHandlers watching the Gauge will be invoked.
+			/// </summary>
+			/// <param name="value">The new value to assign to the Gauge.</param>
+			/// <returns>The resulting value of the Gauge is returned.  Note that validation could mean this is not the same as the value parameter passed in.</returns>
+			T SetValue(T value);
+
+			/// <summary>
 			/// The initial value of the Gauge.
 			/// </summary>
 			T Default { get; }
@@ -495,6 +510,12 @@ namespace Barliesque.EventObjects
 			{
 				get => _gauge._current;
 				set => _gauge.SetValue(this, value);
+			}
+
+			public T SetValue(T value)
+			{
+				_gauge.SetValue(this, value);
+				return _gauge._current;
 			}
 
 			public T Default => _gauge._default;
@@ -641,6 +662,7 @@ namespace Barliesque.EventObjects
 		private void SetValue(Key key, T value)
 		{
 			if (EqualityComparer<T>.Default.Equals(_current, value)) return;
+			Previous = _current;
 			_current = OnChange(value);
 			SendChangedValue(key);
 		}
@@ -733,6 +755,7 @@ namespace Barliesque.EventObjects
 				return;
 			}
 
+			Previous = _current;
 			_current = OnChange(_current);
 			SendChangedValue(null);
 		}
