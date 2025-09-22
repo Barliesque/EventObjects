@@ -33,7 +33,7 @@ namespace Barliesque.EventObjects
 			get
 			{
 				if (_inst) return _inst;
-				
+
 				_instances ??= new Dictionary<string, PartyLine>();
 
 				if (_instances.ContainsKey(this.name))
@@ -51,7 +51,7 @@ namespace Barliesque.EventObjects
 		}
 
 
-		[SerializeField, TextArea(4,16)]
+		[SerializeField, TextArea(4, 16)]
 		private string Comments;
 
 		private List<KeyBase> _keys;
@@ -75,6 +75,7 @@ namespace Barliesque.EventObjects
 		/// The type of value or object to be sent across this PartyLine
 		/// </summary>
 		public Type MessageType => _messageType;
+
 		private Type _messageType;
 
 		[SerializeField]
@@ -91,7 +92,7 @@ namespace Barliesque.EventObjects
 		{
 			owners.Clear();
 			if (_keys == null) return;
-			
+
 			for (int i = _keys.Count - 1; i >= 0; i--)
 			{
 				var success = _keys[i].GetOwner(out var owner);
@@ -135,7 +136,7 @@ namespace Barliesque.EventObjects
 				if (LogMessages)
 				{
 					Debug.Log(
-						$"PartyLine [{name}] initialized when [{initializer.GetType().Name}] on [{initializer.name}] called {(newKey ? "CreateKey()" : "AddListener()")}");
+						$"PartyLine [{name}] initialized when [{initializer.GetType().Name}] on [{initializer.name}] called {(newKey ? "CreateKey()" : "AddListener()")}", this);
 				}
 #endif
 			}
@@ -265,7 +266,7 @@ namespace Barliesque.EventObjects
 				if (!success && _party != null)
 				{
 					Debug.LogException(new Exception(
-						$"PartyLine [{_party.name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"));
+						$"PartyLine [{_party.name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"), _party);
 					Dispose();
 				}
 
@@ -371,7 +372,7 @@ namespace Barliesque.EventObjects
 			}
 		}
 
-		
+
 		/// <summary>
 		/// Remove all handlers registered to the given listener.
 		/// </summary>
@@ -421,7 +422,7 @@ namespace Barliesque.EventObjects
 				else
 				{
 					// Listener was Garbage Collected - Remove handler
-					Debug.Log($"<color=yellow>PartyLine [{name}]:  Listener was garbage collected.  Handler removed.</color>");
+					Debug.Log($"<color=yellow>PartyLine [{name}]:  Listener was garbage collected.  Handler removed.</color>", this);
 					_listeners.RemoveAt(i);
 				}
 			}
@@ -447,7 +448,7 @@ namespace Barliesque.EventObjects
 				else
 				{
 					// Listener was Garbage Collected - Remove handler
-					Debug.Log($"<color=yellow>PartyLine [{name}]:  Listener was garbage collected.  Handler removed.</color>");
+					Debug.Log($"<color=yellow>PartyLine [{name}]:  Listener was garbage collected.  Handler removed.</color>", this);
 					_listeners.RemoveAt(i);
 				}
 			}
@@ -485,7 +486,7 @@ namespace Barliesque.EventObjects
 			//  If sender is already sending, then this is a recursive call
 			if (sender.Sending)
 			{
-				Debug.LogException(new Exception($"PartyLine [{name}] blocked a recursive attempt by [{member.name}] to send a message!"));
+				Debug.LogException(new Exception($"PartyLine [{name}] blocked a recursive attempt by [{member.name}] to send a message!"), this);
 				return;
 			}
 
@@ -494,7 +495,7 @@ namespace Barliesque.EventObjects
 #if LOGGING
 			if (LogMessages)
 			{
-				Debug.Log($"[{member.GetType().Name}] on [{member.name}] sent (void) to PartyLine [{name}]");
+				Debug.Log($"[{member.GetType().Name}] on [{member.name}] sent (void) to PartyLine [{name}]", this);
 			}
 #endif
 
@@ -511,13 +512,13 @@ namespace Barliesque.EventObjects
 					}
 					catch (Exception e)
 					{
-						Debug.LogException(e);
+						Debug.LogException(e, this);
 					}
 				}
 				else
 				{
 					Debug.LogException(new Exception(
-						$"PartyLine [{name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"));
+						$"PartyLine [{name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"), this);
 				}
 			}
 
@@ -534,13 +535,13 @@ namespace Barliesque.EventObjects
 						}
 						catch (Exception e)
 						{
-							Debug.LogException(e);
+							Debug.LogException(e, this);
 						}
 					}
 					else
 					{
 						// Listener was Garbage Collected - Remove handler
-						Debug.Log($"<color=yellow>PartyLine [{name}]:  Listener was garbage collected.  Handler removed.</color>");
+						Debug.Log($"<color=yellow>PartyLine [{name}]:  Listener was garbage collected.  Handler removed.</color>", this);
 						_listeners.RemoveAt(i);
 					}
 				}
@@ -557,7 +558,7 @@ namespace Barliesque.EventObjects
 			//  If sender is already sending, then this is a recursive call
 			if (sender.Sending)
 			{
-				Debug.LogException(new Exception($"PartyLine [{name}] blocked a recursive attempt by {member.name} to send a message!"));
+				Debug.LogException(new Exception($"PartyLine [{name}] blocked a recursive attempt by {member.name} to send a message!"), this);
 				return;
 			}
 
@@ -566,7 +567,7 @@ namespace Barliesque.EventObjects
 #if LOGGING
 			if (LogMessages)
 			{
-				Debug.Log($"[{member.GetType().Name}] on [{member.name}] sent [{message?.ToString() ?? "null"}] to PartyLine [{name}]");
+				Debug.Log($"[{member.GetType().Name}] on [{member.name}] sent [{message?.ToString() ?? "null"}] to PartyLine [{name}]", this);
 			}
 #endif
 
@@ -583,13 +584,13 @@ namespace Barliesque.EventObjects
 					}
 					catch (Exception e)
 					{
-						Debug.LogException(e);
+						Debug.LogException(e, this);
 					}
 				}
 				else
 				{
 					Debug.LogException(new Exception(
-						$"PartyLine [{name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"));
+						$"PartyLine [{name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"), this);
 				}
 			}
 
@@ -606,13 +607,13 @@ namespace Barliesque.EventObjects
 						}
 						catch (Exception e)
 						{
-							Debug.LogException(e);
+							Debug.LogException(e, this);
 						}
 					}
 					else
 					{
 						// Listener was Garbage Collected - Remove handler
-						Debug.Log($"<color=yellow>PartyLine [{name}]:  Listener was garbage collected.  Handler removed.</color>");
+						Debug.Log($"<color=yellow>PartyLine [{name}]:  Listener was garbage collected.  Handler removed.</color>", this);
 						_listeners.RemoveAt(i);
 					}
 				}

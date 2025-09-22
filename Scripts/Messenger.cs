@@ -33,7 +33,7 @@ namespace Barliesque.EventObjects
 			get
 			{
 				if (_inst) return _inst;
-				
+
 				_instances ??= new Dictionary<string, Messenger>();
 				if (_instances.ContainsKey(this.name))
 				{
@@ -50,11 +50,14 @@ namespace Barliesque.EventObjects
 		}
 
 
-		[SerializeField, TextArea(4,16)] private string Comments;
+		[SerializeField, TextArea(4, 16)] private string Comments;
 
 		public delegate void MessageHandler();
+
 		public delegate void MessageHandler<in T>(T data);
+
 		public delegate R MessageHandler<in M, out R>(M data);
+
 		public delegate void ResponseHandler<in R>(R data);
 
 		public Type MessageType => Instance._messageType;
@@ -125,7 +128,8 @@ namespace Barliesque.EventObjects
 #if LOGGING
 				if (LogMessages)
 				{
-					Debug.Log($"Messenger [{name}] initialized when [{initializer.GetType().Name}] on [{initializer.name}] called {(newKey ? "CreateKey()" : "Subscribe()")}");
+					Debug.Log(
+						$"Messenger [{name}] initialized when [{initializer.GetType().Name}] on [{initializer.name}] called {(newKey ? "CreateKey()" : "Subscribe()")}", this);
 				}
 #endif
 			}
@@ -137,10 +141,12 @@ namespace Barliesque.EventObjects
 					{
 						throw new Exception($"Type mismatch!  Messenger [{name}] has been initialized for messages with no parameter.");
 					}
+
 					if (messageType == null)
 					{
 						throw new Exception($"Type mismatch!  Messenger [{name}] has been initialized for messages of type <{_messageType.Name}>");
 					}
+
 					if (!messageType.IsSubclassOf(_messageType))
 					{
 						throw new Exception($"Type mismatch!  Messenger [{name}] has been initialized for messages of type <{_messageType.Name}>");
@@ -152,13 +158,17 @@ namespace Barliesque.EventObjects
 				{
 					throw new Exception($"Type mismatch!  Messenger [{name}] has been initialized for subscribers that do not return any response.");
 				}
+
 				if (messageType == null)
 				{
-					throw new Exception($"Type mismatch!  Messenger [{name}] has been initialized for subscribers that return a response of type <{_responseType.Name}>");
+					throw new Exception(
+						$"Type mismatch!  Messenger [{name}] has been initialized for subscribers that return a response of type <{_responseType.Name}>");
 				}
+
 				if (!responseType.IsSubclassOf(_responseType))
 				{
-					throw new Exception($"Type mismatch!  Messenger [{name}] has been initialized for subscribers that return a response of type <{_responseType.Name}>");
+					throw new Exception(
+						$"Type mismatch!  Messenger [{name}] has been initialized for subscribers that return a response of type <{_responseType.Name}>");
 				}
 			}
 		}
@@ -257,8 +267,9 @@ namespace Barliesque.EventObjects
 			{
 				bool success = _owner.TryGetTarget(out owner) && owner;
 				if (success || !_messenger) return success;
-				
-				Debug.LogException(new Exception($"Messenger [{_messenger.name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"));
+
+				Debug.LogException(new Exception(
+					$"Messenger [{_messenger.name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"), _messenger);
 				Dispose();
 				return false;
 			}
@@ -278,7 +289,7 @@ namespace Barliesque.EventObjects
 			{
 				// Ensure key is still valid
 				GetOwner(out var owner);
-				
+
 				_messenger.SendMessage();
 			}
 		}
@@ -344,8 +355,8 @@ namespace Barliesque.EventObjects
 			CheckInitialization(null, null, true, owner);
 			_key = new Key(owner, this);
 #if LOGGING
-			if (_logMessages) 
-				Debug.Log($"Messenger [{this.name}] created new key for [{owner.name}]");
+			if (_logMessages)
+				Debug.Log($"Messenger [{this.name}] created new key for [{owner.name}]", this);
 #endif
 			return (Key)_key;
 		}
@@ -366,8 +377,8 @@ namespace Barliesque.EventObjects
 			CheckInitialization(typeof(T), null, true, owner);
 			_key = new Key<T>(owner, this);
 #if LOGGING
-			if (_logMessages) 
-				Debug.Log($"Messenger [{this.name}] created new key for [{owner.name}]");
+			if (_logMessages)
+				Debug.Log($"Messenger [{this.name}] created new key for [{owner.name}]", this);
 #endif
 			return (Key<T>)_key;
 		}
@@ -389,8 +400,8 @@ namespace Barliesque.EventObjects
 			CheckInitialization(typeof(M), typeof(R), true, owner);
 			_key = new Key<M, R>(owner, this);
 #if LOGGING
-			if (_logMessages) 
-				Debug.Log($"Messenger [{this.name}] created new key for [{owner.name}]");
+			if (_logMessages)
+				Debug.Log($"Messenger [{this.name}] created new key for [{owner.name}]", this);
 #endif
 			return (Key<M, R>)_key;
 		}
@@ -401,14 +412,14 @@ namespace Barliesque.EventObjects
 		/// </summary>
 		private void DisposeKey()
 		{
-			if (_logMessages)
+			if (_key != null && _logMessages)
 			{
 				_key.GetOwner(out var owner);
 #if LOGGING
 				if (_logMessages)
-					Debug.Log($"Messenger [{this.name}] disposed key for [{(owner == null ? "(Owner Destroyed)" : owner.name)}]");
-#endif				
-			};
+					Debug.Log($"Messenger [{this.name}] disposed key for [{(owner == null ? "(Owner Destroyed)" : owner.name)}]", this);
+#endif
+			}
 			_key = null;
 		}
 
@@ -608,17 +619,17 @@ namespace Barliesque.EventObjects
 				if (weak.GetOwner(out var subscribed))
 				{
 					if (subscribed != subscriber) continue;
-					
+
 					// Found the listener
 					if (!weak.GetCallback(out var found)) continue;
-					
+
 					// Handler found?
 					if (found == handler) return i;
 				}
 				else
 				{
 					// Listener was Garbage Collected - Remove handler
-					Debug.Log($"<color=yellow>Messenger [{name}]:  Subscriber was garbage collected.  Handler removed.</color>");
+					Debug.Log($"<color=yellow>Messenger [{name}]:  Subscriber was garbage collected.  Handler removed.</color>", this);
 					_subscribers.RemoveAt(i);
 				}
 			}
@@ -635,17 +646,17 @@ namespace Barliesque.EventObjects
 				if (weak.GetOwner(out var subscribed))
 				{
 					if (subscribed != subscriber) continue;
-					
+
 					// Found the listener
 					if (!weak.GetCallback(out var found)) continue;
-					
+
 					// Handler found?
 					if (found == handler) return i;
 				}
 				else
 				{
 					// Listener was Garbage Collected - Remove handler
-					Debug.Log($"<color=yellow>Messenger [{name}]:  Subscriber was garbage collected.  Handler removed.</color>");
+					Debug.Log($"<color=yellow>Messenger [{name}]:  Subscriber was garbage collected.  Handler removed.</color>", this);
 					_subscribers.RemoveAt(i);
 				}
 			}
@@ -662,17 +673,17 @@ namespace Barliesque.EventObjects
 				if (weak.GetOwner(out var subscribed))
 				{
 					if (subscribed != subscriber) continue;
-					
+
 					// Found the listener
 					if (!weak.GetCallback(out var found)) continue;
-					
+
 					// Handler found?
 					if (found == handler) return i;
 				}
 				else
 				{
 					// Listener was Garbage Collected - Remove handler
-					Debug.Log($"<color=yellow>Messenger [{name}]:  Subscriber was garbage collected.  Handler removed.</color>");
+					Debug.Log($"<color=yellow>Messenger [{name}]:  Subscriber was garbage collected.  Handler removed.</color>", this);
 					_subscribers.RemoveAt(i);
 				}
 			}
@@ -718,7 +729,7 @@ namespace Barliesque.EventObjects
 			if (LogMessages)
 			{
 				if (!GetOwner(out var owner)) return;
-				Debug.Log($"[{owner.GetType().Name}] on [{owner.name}] sent (void) to {_subscribers.Count} subscriber(s) of Messenger [{name}]");
+				Debug.Log($"[{owner.GetType().Name}] on [{owner.name}] sent (void) to {_subscribers.Count} subscriber(s) of Messenger [{name}]", this);
 			}
 #endif
 			for (int i = _subscribers.Count - 1; i >= 0; i--)
@@ -732,12 +743,12 @@ namespace Barliesque.EventObjects
 					}
 					catch (Exception e)
 					{
-						Debug.LogException(e);
+						Debug.LogException(e, this);
 					}
 				}
 				else
 				{
-					Debug.Log($"<color=yellow>Messenger [{name}]:  Subscriber was garbage collected.  Handler removed.</color>");
+					Debug.Log($"<color=yellow>Messenger [{name}]:  Subscriber was garbage collected.  Handler removed.</color>", this);
 					_subscribers.RemoveAt(i);
 				}
 			}
@@ -763,7 +774,7 @@ namespace Barliesque.EventObjects
 			{
 				if (!GetOwner(out var owner)) return;
 				Debug.Log(
-					$"[{owner.GetType().Name}] on [{owner.name}] sent [{message?.ToString() ?? "null"}] to {_subscribers.Count} subscriber(s) of Messenger [{name}]");
+					$"[{owner.GetType().Name}] on [{owner.name}] sent [{message?.ToString() ?? "null"}] to {_subscribers.Count} subscriber(s) of Messenger [{name}]", this);
 			}
 #endif
 			for (int i = _subscribers.Count - 1; i >= 0; i--)
@@ -777,12 +788,12 @@ namespace Barliesque.EventObjects
 					}
 					catch (Exception e)
 					{
-						Debug.LogException(e);
+						Debug.LogException(e, this);
 					}
 				}
 				else
 				{
-					Debug.Log($"<color=yellow>Messenger [{name}]:  Subscriber was garbage collected.  Handler removed.</color>");
+					Debug.Log($"<color=yellow>Messenger [{name}]:  Subscriber was garbage collected.  Handler removed.</color>", this);
 					_subscribers.RemoveAt(i);
 				}
 			}
@@ -808,7 +819,8 @@ namespace Barliesque.EventObjects
 			if (LogMessages)
 			{
 				if (!GetOwner(out var owner)) return;
-				Debug.Log($"[{owner.GetType().Name}] on [{owner.name}] sent [{message?.ToString() ?? "null"}] to {_subscribers.Count} subscriber(s) of Messenger [{name}]");
+				Debug.Log(
+					$"[{owner.GetType().Name}] on [{owner.name}] sent [{message?.ToString() ?? "null"}] to {_subscribers.Count} subscriber(s) of Messenger [{name}]", this);
 			}
 #endif
 			for (int i = _subscribers.Count - 1; i >= 0; i--)
@@ -823,12 +835,12 @@ namespace Barliesque.EventObjects
 					}
 					catch (Exception e)
 					{
-						Debug.LogException(e);
+						Debug.LogException(e, this);
 					}
 				}
 				else
 				{
-					Debug.Log($"<color=yellow>Messenger [{name}]:  Subscriber was garbage collected.  Handler removed.</color>");
+					Debug.Log($"<color=yellow>Messenger [{name}]:  Subscriber was garbage collected.  Handler removed.</color>", this);
 					_subscribers.RemoveAt(i);
 				}
 			}

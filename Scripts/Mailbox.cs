@@ -37,12 +37,12 @@ namespace Barliesque.EventObjects
 			get
 			{
 				if (_inst) return _inst;
-				
+
 				_instances ??= new Dictionary<string, Mailbox>();
 
-				if (_instances.ContainsKey(this.name))
+				if (_instances.TryGetValue(this.name, out var instance))
 				{
-					_inst = _instances[this.name];
+					_inst = instance;
 				}
 				else
 				{
@@ -179,7 +179,7 @@ namespace Barliesque.EventObjects
 				if (LogMessages)
 				{
 					Debug.Log(
-						$"Mailbox [{name}] initialized when [{initializer.GetType().Name}] on [{initializer.name}] called {(newKey ? "CreateKey()" : "SendMessage()")}");
+						$"Mailbox [{name}] initialized when [{initializer.GetType().Name}] on [{initializer.name}] called {(newKey ? "CreateKey()" : "SendMessage()")}", this);
 				}
 #endif
 			}
@@ -350,12 +350,11 @@ namespace Barliesque.EventObjects
 			internal bool GetOwner(out MonoBehaviour owner)
 			{
 				bool success = _handler.GetOwner(out owner);
-				if (!success && mailbox != null)
-				{
-					Debug.LogException(new Exception(
-						$"Mailbox [{mailbox.name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"));
-					Dispose();
-				}
+				if (success || !mailbox) return success;
+				
+				Debug.LogException(new Exception(
+					$"Mailbox [{mailbox.name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"), mailbox);
+				Dispose();
 
 				return success;
 			}
@@ -412,11 +411,11 @@ namespace Barliesque.EventObjects
 						if (mail.responseHandler.GetOwner(out var sender))
 						{
 							Debug.Log(
-								$"Mailbox [{mailbox.name}] processed message {mail.Content.ToString()} from [{sender.GetType().Name}] on [{sender.name}]");
+								$"Mailbox [{mailbox.name}] processed message {mail.Content.ToString()} from [{sender.GetType().Name}] on [{sender.name}]", mailbox);
 						}
 						else
 						{
-							Debug.Log($"Mailbox [{mailbox.name}] processed message {mail.Content.ToString()} from a destroyed sender.");
+							Debug.Log($"Mailbox [{mailbox.name}] processed message {mail.Content.ToString()} from a destroyed sender.", mailbox);
 						}
 #endif
 					}
@@ -428,7 +427,7 @@ namespace Barliesque.EventObjects
 				else
 				{
 					Debug.LogException(new Exception(
-						$"Mailbox [{mailbox.name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"));
+						$"Mailbox [{mailbox.name}] key was not properly disposed before owner was destroyed!  Make sure to call Key.Dispose()"), mailbox);
 					Dispose();
 				}
 			}
@@ -485,12 +484,12 @@ namespace Barliesque.EventObjects
 							if (mail.responseHandler.GetOwner(out var sender))
 							{
 								Debug.Log(
-									$"Mailbox [{mailbox.name}] processed message [{mail.Content?.ToString() ?? "null"}] from [{sender.GetType().Name}] on [{sender.name}]");
+									$"Mailbox [{mailbox.name}] processed message [{mail.Content?.ToString() ?? "null"}] from [{sender.GetType().Name}] on [{sender.name}]", mailbox);
 							}
 							else
 							{
 								Debug.Log(
-									$"Mailbox [{mailbox.name}] processed message [{mail.Content?.ToString() ?? "null"}] from a destroyed sender.");
+									$"Mailbox [{mailbox.name}] processed message [{mail.Content?.ToString() ?? "null"}] from a destroyed sender.", mailbox);
 							}
 						}
 #endif
@@ -501,7 +500,7 @@ namespace Barliesque.EventObjects
 #if LOGGING
 							if (mailbox.LogMessages)
 							{
-								Debug.Log($"Mailbox [{mailbox.name}] responded with [{response?.ToString() ?? "null"}]");
+								Debug.Log($"Mailbox [{mailbox.name}] responded with [{response?.ToString() ?? "null"}]", mailbox);
 							}
 #endif
 							respond.Invoke(response);
@@ -509,13 +508,13 @@ namespace Barliesque.EventObjects
 						catch (Exception e)
 						{
 							// Catch error on respond()
-							Debug.LogException(e);
+							Debug.LogException(e, mailbox);
 						}
 					}
 					catch (Exception e)
 					{
 						// Catch error on send()
-						Debug.LogException(e);
+						Debug.LogException(e, mailbox);
 					}
 				}
 				else
@@ -685,7 +684,7 @@ namespace Barliesque.EventObjects
 			if (receiving && !_holdMail)
 			{
 				Debug.LogException(new Exception(
-					$"Mailbox [{name}] blocked a recursive attempt to send a message!  Response handlers may only send a message if Mailbox.HoldsMail is true."));
+					$"Mailbox [{name}] blocked a recursive attempt to send a message!  Response handlers may only send a message if Mailbox.HoldsMail is true."), this);
 				return;
 			}
 
@@ -694,13 +693,13 @@ namespace Barliesque.EventObjects
 
 			if (_messages.Count >= _maxCapacity)
 			{
-				Debug.Log($"<color=yellow>Mailbox [{name}] is full and cannot accept any more messages!</color>");
+				Debug.Log($"<color=yellow>Mailbox [{name}] is full and cannot accept any more messages!</color>", this);
 				return;
 			}
 #if LOGGING
 			if (LogMessages)
 			{
-				Debug.Log($"[{sender.GetType().Name}] on [{sender.name}] sent {content.ToString()} to Mailbox [{name}]");
+				Debug.Log($"[{sender.GetType().Name}] on [{sender.name}] sent {content.ToString()} to Mailbox [{name}]", sender);
 			}
 #endif
 			_messages.Add(new Message<I>(sender, content, responseHandler));
@@ -743,7 +742,7 @@ namespace Barliesque.EventObjects
 			if (receiving && !_holdMail)
 			{
 				Debug.LogException(new Exception(
-					$"Mailbox [{name}] blocked a recursive attempt to send a message.  Response handlers may only send a message if Mailbox.HoldsMail is true."));
+					$"Mailbox [{name}] blocked a recursive attempt to send a message.  Response handlers may only send a message if Mailbox.HoldsMail is true."), sender);
 				return;
 			}
 
@@ -752,13 +751,13 @@ namespace Barliesque.EventObjects
 
 			if (_messages.Count >= _maxCapacity)
 			{
-				Debug.Log($"<color=yellow>Mailbox [{name}] is full and cannot accept any more messages!</color>");
+				Debug.Log($"<color=yellow>Mailbox [{name}] is full and cannot accept any more messages!</color>", this);
 				return;
 			}
 #if LOGGING
 			if (LogMessages)
 			{
-				Debug.Log($"[{sender.GetType().Name}] on [{sender.name}] sent {content.ToString()} to Mailbox [{name}]");
+				Debug.Log($"[{sender.GetType().Name}] on [{sender.name}] sent {content.ToString()} to Mailbox [{name}]", sender);
 			}
 #endif
 			_messages.Add(new Message<I, O>(sender, content, responseHandler));
@@ -834,7 +833,7 @@ namespace Barliesque.EventObjects
 				}
 				catch (Exception e)
 				{
-					Debug.LogException(e);
+					Debug.LogException(e, this);
 				}
 			}
 
@@ -889,7 +888,7 @@ namespace Barliesque.EventObjects
 
 				// Has this message been postponed?
 				if (!key.PostponedThis) continue;
-				
+
 				// If so, add the message to the end of the queue to be processed next time
 				_messages.Add(mail);
 				key.PostponedThis = false;

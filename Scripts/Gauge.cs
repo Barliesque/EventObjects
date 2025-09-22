@@ -100,7 +100,7 @@ namespace Barliesque.EventObjects
 			get
 			{
 				if (_inst) return _inst;
-				
+
 				_instances ??= new Dictionary<string, Gauge>();
 
 				if (_instances.ContainsKey(this.name))
@@ -142,7 +142,7 @@ namespace Barliesque.EventObjects
 
 		override public string PrefsPath => $"{typeof(T).Name}/{name}";
 
-		[SerializeField, TextArea(4,16)]
+		[SerializeField, TextArea(4, 16)]
 		private string Comments;
 
 		[SerializeField]
@@ -298,13 +298,15 @@ namespace Barliesque.EventObjects
 			catch (Exception)
 			{
 				Debug.LogError(
-					$"<color=red>Serialization Error in {this.GetType().Name}[{name}] attempting to deserialize: \"{serial}\" to {typeof(T).Name}</color>", this);
+					$"<color=red>Serialization Error in {this.GetType().Name}[{name}] attempting to deserialize: \"{serial}\" to {typeof(T).Name}</color>",
+					this);
 				throw;
 			}
 #if LOGGING
 			if (LogChanges)
 			{
-				Debug.Log($"Gauge<{typeof(T)}> [{name}] initialized with {(saved ? "saved" : "default")} value: {_current?.ToString() ?? "null"}", this);
+				Debug.Log($"Gauge<{typeof(T)}> [{name}] initialized with {(saved ? "saved" : "default")} value: {_current?.ToString() ?? "null"}",
+					this);
 			}
 #endif
 		}
