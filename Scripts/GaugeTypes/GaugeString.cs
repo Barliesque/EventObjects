@@ -1,17 +1,20 @@
 ﻿using UnityEngine;
-using Barliesque.EventObjects;
 
-[CreateAssetMenu(fileName = "Gauge(string)", menuName = "Barliesque/Event Objects/Gauges/string")]
-public class GaugeString : Gauge<string>, Gauge<string>.ISerializable
+namespace Barliesque.EventObjects
 {
-	public string Serialize(string value)
-	{
-		return value;
-	}
 
-	public string Deserialize(string serial)
+	[CreateAssetMenu(fileName = "Gauge(string)", menuName = "Barliesque/Event Objects/Gauges/string")]
+	public class GaugeString : Gauge<string>, Gauge<string>.ISerializable
 	{
-		return serial;
-	}
+		public string Serialize(string value)
+		{
+			return value;
+		}
 
+		public string Deserialize(string serial)
+		{
+			return serial;
+		}
+
+	}
 }
