@@ -7,7 +7,7 @@ public struct TimePeriod : ISerializationCallbackReceiver
 {
 	[SerializeField] private int _days;
 	public int Days {
-		get { return _days; }
+		get => _days;
 		set {
 			_days = value;
 			Validate();
@@ -16,7 +16,7 @@ public struct TimePeriod : ISerializationCallbackReceiver
 
 	[SerializeField] private int _hours;
 	public int Hours {
-		get { return _hours; }
+		get => _hours;
 		set {
 			_hours = value;
 			Validate();
@@ -25,7 +25,7 @@ public struct TimePeriod : ISerializationCallbackReceiver
 
 	[SerializeField] private int _minutes;
 	public int Minutes {
-		get { return _minutes; }
+		get => _minutes;
 		set {
 			_minutes = value;
 			Validate();
@@ -34,7 +34,7 @@ public struct TimePeriod : ISerializationCallbackReceiver
 
 	[SerializeField] private float _seconds;
 	public float Seconds {
-		get { return _seconds; }
+		get => _seconds;
 		set {
 			_seconds = value;
 			Validate();
@@ -93,7 +93,7 @@ public struct TimePeriod : ISerializationCallbackReceiver
 	{ }
 
 
-	public override string ToString()
+	override public string ToString()
 	{
 		return $"[TimePeriod: Days={_days} Hours={_hours} Minutes={_minutes} Seconds={_seconds}]";
 	}
