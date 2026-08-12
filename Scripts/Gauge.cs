@@ -82,6 +82,8 @@ namespace Barliesque.EventObjects
 		/// The path in PlayerPrefs where the current value of the Gauge is stored for persistence.
 		/// </summary>
 		abstract public string PrefsPath { get; }
+		
+		abstract public string ValueAsString { get; }
 	}
 
 
@@ -141,6 +143,8 @@ namespace Barliesque.EventObjects
 		override public bool IsSerializable => (Instance is ISerializable);
 
 		override public string PrefsPath => $"{typeof(T).Name}/{name}";
+
+		override public string ValueAsString => Application.isPlaying ? _current?.ToString() : _default?.ToString();
 
 		[SerializeField, TextArea(4, 16)]
 		private string Comments;
@@ -595,9 +599,9 @@ namespace Barliesque.EventObjects
 		/// A Key is required to make changes to the Gauge value
 		/// </summary>
 		/// <param name="owner">A reference to the script that owns the key (typically "this").  If the owner is garbage collected without Key.Dispose() being called, an error is thrown.</param>
-		/// <param name="handler">A method to handle changes to the Gauge's value.</param>
+		/// <param name="handler">(optional) A method to handle changes to the Gauge's value.</param>
 		/// <returns></returns>
-		public IKey CreateKey(MonoBehaviour owner, ChangeHandler handler)
+		public IKey CreateKey(MonoBehaviour owner, ChangeHandler handler = null)
 		{
 			if (Instance != this)
 			{
@@ -787,5 +791,6 @@ namespace Barliesque.EventObjects
 
 			return $"Gauge<{typeof(T).Name}> [{name}] = [{_current}]";
 		}
+		
 	}
 }
