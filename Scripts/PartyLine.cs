@@ -167,8 +167,8 @@ namespace Barliesque.EventObjects
 		/// Each member of the PartyLine group must have a key, which it will use to send messages.  The first key created determines what message type all keys must handle.
 		/// </summary>
 		/// <param name="owner">A reference to the script that owns the key (typically "this").  If the owner is garbage collected without Key.Dispose() being called, an error is thrown.</param>
-		/// <param name="handler">A method to handle incoming messages from the PartyLine</param>
-		public IKey CreateKey(MonoBehaviour owner, MessageHandler handler)
+		/// <param name="handler">A method to handle incoming messages from the PartyLine.  Not invoked when this Key is used to send the message.</param>
+		public IKey CreateKey(MonoBehaviour owner, MessageHandler handler = null)
 		{
 			CheckInitialization(null, true, owner);
 			var key = new Key(owner, this, handler);
