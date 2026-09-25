@@ -25,6 +25,7 @@ namespace Barliesque.EventObjects
 	{
 		static protected Dictionary<string, Gauge> _instances;
 
+		abstract public void Reset();
 
 #if UNITY_EDITOR
 		/// <summary>
@@ -32,12 +33,6 @@ namespace Barliesque.EventObjects
 		/// </summary>
 		[Obsolete("**** INTERNAL USE ONLY! **** EXPOSED ONLY IN EDITOR ****")]
 		abstract public void __changed();
-
-		/// <summary>
-		/// **** INTERNAL USE ONLY! **** EXPOSED ONLY IN EDITOR ****
-		/// </summary>
-		[Obsolete("**** INTERNAL USE ONLY! **** EXPOSED ONLY IN EDITOR ****")]
-		abstract public void __reset();
 
 		/// <summary>
 		/// **** INTERNAL USE ONLY! **** EXPOSED ONLY IN EDITOR ****
@@ -748,10 +743,23 @@ namespace Barliesque.EventObjects
 				PlayerPrefs.Save();
 			}
 		}
+		
+
+		override public void Reset()
+		{
+			if (Instance != this)
+			{
+				Instance.Reset();
+				return;
+			}
+			
+			//TODO  Consider clearing all watchers.  Before or after SetValue?
+
+			SetValue(null, _default);
+		}
 
 
 #if UNITY_EDITOR
-
 		[Obsolete("*** RESTRICTED ACCESS ***")]
 		override public void __changed()
 		{
@@ -764,18 +772,6 @@ namespace Barliesque.EventObjects
 			Previous = _current;
 			_current = OnChange(_current);
 			SendChangedValue(null);
-		}
-
-		[Obsolete("*** RESTRICTED ACCESS ***")]
-		override public void __reset()
-		{
-			if (Instance != this)
-			{
-				Instance.__reset();
-				return;
-			}
-
-			SetValue(null, _default);
 		}
 #endif
 

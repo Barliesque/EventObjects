@@ -33,7 +33,7 @@ namespace Barliesque.EventObjects.Editor
 			}
 		}
 
-		protected override void CustomInspector()
+		override protected void CustomInspector()
 		{
 			InspectorMain(this);
 			InspectorRuntime(this);
@@ -154,25 +154,25 @@ namespace Barliesque.EventObjects.Editor
 		}
 
 
-		private static void ResetValue(Gauge inst)
+		static private void ResetValue(Gauge inst)
 		{
-			inst.__reset();
+			inst.Reset();
 		}
 
-		private static void BeginEdit(Gauge inst)
+		static private void BeginEdit(Gauge inst)
 		{
 			// Make a copy of the serialized property that's disconnected from the instance
 			_editableCopy = new SerializedObject(inst).FindProperty("_current");
 		}
 
-		private static void UndoEdit()
+		static private void UndoEdit()
 		{
 			// Dispose of the editable copy, so that the instance's current value is again displayed
 			_editableCopy.Dispose();
 			_editableCopy = null;
 		}
 
-		private static void ApplyEdit(EditorBase editor, Gauge inst)
+		static private void ApplyEdit(EditorBase editor, Gauge inst)
 		{
 			// Copy the edited property to the instance
 			editor.serializedObject.CopyFromSerializedProperty(_editableCopy);
