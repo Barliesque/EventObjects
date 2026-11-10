@@ -759,7 +759,12 @@ namespace Barliesque.EventObjects
 			if (IsInitialized)
 			{
 				_watchers.Clear();
-				foreach (var key in _keys) key.Dispose();
+				for (var i = _keys.Count - 1; i >= 0; i--)
+				{
+					var key = _keys[i];
+					key.Dispose();
+				}
+
 				_keys.Clear();
 			}
 
