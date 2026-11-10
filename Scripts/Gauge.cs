@@ -699,11 +699,12 @@ namespace Barliesque.EventObjects
 
 				for (int i = _keys.Count - 1; i >= 0; i--)
 				{
+					if (i >= _keys.Count) continue;
 					var receiver = _keys[i];
 					// Don't send to sender
 					if (receiver == sender) continue;
 					receiver.InvokeHandler();
-					// Check that sending hasn't been cancelled
+					// Check that sending hasn't been canceled
 					if (!(sender == null || sender.Sending)) return;
 				}
 
